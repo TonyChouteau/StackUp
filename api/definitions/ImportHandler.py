@@ -1,12 +1,15 @@
+import re
+
 import sys
 sys.path.append("./api")
 
 from definitions.Line import Line
+from definitions.Account import Account
 
 class ImportHandler:
 
     def __init__(self):
-        pass
+        self.data = {}
 
     def add_file(self, file):
         with open("./assets/export_ca.csv", encoding="latin-1") as file:
@@ -26,12 +29,26 @@ class ImportHandler:
                 if line.count("\"") == 1:
                     is_str = not is_str
 
-            self.data = data
+            head_part = []
+            data_part = []
+            account_number = ""
+            is_head = False
+            for line in data:
+                if len(line) != 0:
+                    if "n°" in line:
+                        account_number = line.split("n° ")[1].replace(";", "")
+                    if re.match("[0-9]", line[0]) is None:
+                        if is_head == False:
+                            head_part = []
+                            data_part = []
+                            is_head = True
+                        head_part.append(line)
+                    else:
+                        if is_head == True:
+                            self.data[account_number] = Account(head_part, data_part)
+                            is_head = False
+                        data_part.append(line)
             
-    def head(self):
-        for data in self.data[:20]:
-            print(data)
-
     def show(self):
-        for data in self.data:
-            print(data)
+        for account_number in self.data:
+            self.data[account_number].show()
