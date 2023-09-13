@@ -5,6 +5,7 @@ sys.path.append("./api")
 
 from definitions.Line import Line
 from definitions.Account import Account
+from definitions.Total import Total
 
 class ImportHandler:
 
@@ -12,7 +13,7 @@ class ImportHandler:
         self.data = {}
 
     def add_file(self, file):
-        with open("./assets/export_ca.csv", encoding="latin-1") as file:
+        with open("./assets/CA20230913_232001.csv", encoding="latin-1") as file:
             lines = []
             for line in file.readlines():
                 if line != "\n":
@@ -32,23 +33,28 @@ class ImportHandler:
             head_part = []
             data_part = []
             account_number = ""
-            is_head = False
+            is_head = True
             for line in data:
                 if len(line) != 0:
                     if "n°" in line:
                         account_number = line.split("n° ")[1].replace(";", "")
                     if re.match("[0-9]", line[0]) is None:
                         if is_head == False:
+                            self.data[account_number] = Account(head_part, data_part)
                             head_part = []
                             data_part = []
                             is_head = True
                         head_part.append(line)
                     else:
                         if is_head == True:
-                            self.data[account_number] = Account(head_part, data_part)
                             is_head = False
                         data_part.append(line)
+            self.data[account_number] = Account(head_part, data_part)
+
+            self.total = Total(self.data)
             
     def show(self):
         for account_number in self.data:
-            self.data[account_number].show()
+            # self.data[account_number].show()
+            self.data[account_number].plot()
+        self.total.plot()
