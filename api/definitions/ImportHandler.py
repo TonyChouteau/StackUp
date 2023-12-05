@@ -54,7 +54,5 @@ class ImportHandler:
             self.total = Total(self.data)
             
     def show(self):
-        for account_number in self.data:
-            # self.data[account_number].show()
-            self.data[account_number].plot()
         self.total.plot()
+        self.total.plotly()

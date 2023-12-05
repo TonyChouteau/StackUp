@@ -2,6 +2,9 @@ import re
 from datetime import datetime
 import matplotlib.pyplot as plt
 
+from sklearn.linear_model import LinearRegression
+import numpy as np
+
 class Account:
 
     FORMAT_VALUE = "[0-9]{0,3} ?[0-9]{1,3},[0-9]{0,3}"
@@ -13,6 +16,10 @@ class Account:
         for line in self.head:
             if "n°" in line:
                 self.account_number = line.split("n° ")[1].replace(";", "")
+                if " carte n°" in line:
+                    self.account_name = line.split(" carte n°")[0]
+                else:
+                    self.account_name = line.split(" n°")[0]
             if "Solde" in line:
                 final_value = re.findall(f" {self.FORMAT_VALUE}", line.replace("\xa0", " "))
                 if len(final_value) >= 1:
@@ -58,6 +65,8 @@ class Account:
                 'before_change': last
             })
             current = last
+
+        self.to_plot = list(reversed(self.calculated))
         pass
 
     def show(self):
@@ -69,11 +78,25 @@ class Account:
             print(line)
 
     def plot(self):
-        x = [d.get('timestamp') for d in self.calculated]
-        y = [d.get('current') for d in self.calculated]
+        diff = self.to_plot[-1].get('timestamp') - self.to_plot[0].get('timestamp')
+        x = [d.get('timestamp') for d in self.to_plot]
+        y = [d.get('current') for d in self.to_plot]
+
+        xn = np.array(x).reshape((-1, 1))
+        yn = np.array(y)
+        model = LinearRegression().fit(xn, yn)
+        y_pred = model.predict(xn)
+        x2 = [(x + diff) for x in x]
+        x2n = np.array(x2).reshape((-1, 1))
+        y_pred2 = model.predict(x2n)
+
         plt.plot(x, y)
         plt.plot(
-            [self.calculated[0].get('timestamp'), self.calculated[-1].get('timestamp')],
+            [self.to_plot[0].get('timestamp'), self.to_plot[-1].get('timestamp')],
             [0, 0]
         )
+        plt.plot(x, y_pred)
+        plt.plot(x2, y_pred2)
+        print(f"{self.account_name} ({self.account_number})")
+        print(f"Value for {datetime.fromtimestamp(x2[-1])} : {y_pred2[-1]}")
         plt.show()
